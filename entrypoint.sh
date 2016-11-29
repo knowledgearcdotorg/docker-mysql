@@ -11,6 +11,7 @@ if [ ! -d "$DATADIR/mysql" ]; then
     echo "initializing mysql data store for the first time..."
 
     if [ -z "$MYSQL_ROOT_PASSWORD" ]; then
+        echo "no password specified, creating random password...."
         MYSQL_ROOT_PASSWORD="$(date +%s | sha256sum | base64 | head -c 32 ; echo)"
         echo "root:$MYSQL_ROOT_PASSWORD"
     fi
