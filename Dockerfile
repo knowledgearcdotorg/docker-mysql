@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM knowledgearcdotorg/supervisor
 MAINTAINER development@knowledgearc.com
 
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
@@ -6,7 +6,7 @@ RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selectio
 RUN apt-get update
 
 RUN apt-get upgrade -y && \
-    apt-get install -y mysql-server supervisor && \
+    apt-get install -y mysql-server && \
     apt-get -y autoremove && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
@@ -14,7 +14,12 @@ RUN apt-get upgrade -y && \
 RUN mkdir /var/run/mysqld
 RUN chown mysql:mysql /var/run/mysqld
 
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+RUN sed \
+    -i.orig \
+    -e s/bind-address\\\t\\\t=\\\s127\.0\.0\.1/bind-address\\\t\\\t=\ 0\.0\.0\.0/g \
+    /etc/mysql/mysql.conf.d/mysqld.cnf
+
+COPY supervisord/mysql.conf /etc/supervisor/conf.d/mysql.conf
 
 COPY entrypoint.sh /usr/local/bin/
 RUN chmod 750 /usr/local/bin/entrypoint.sh
