@@ -10,7 +10,10 @@ echo $DATADIR
 if [ ! -d "$DATADIR/mysql" ]; then
     echo "initializing mysql data store for the first time..."
 
-    MYSQL_ROOT_PASSWORD="$(date +%s | sha256sum | base64 | head -c 32 ; echo)"
+    if [ -z "$MYSQL_ROOT_PASSWORD" ]; then
+        MYSQL_ROOT_PASSWORD="$(date +%s | sha256sum | base64 | head -c 32 ; echo)"
+        echo "root:$MYSQL_ROOT_PASSWORD"
+    fi
 
     echo "creating $DATADIR..."
     mkdir -p "$DATADIR"
@@ -49,8 +52,6 @@ if [ ! -d "$DATADIR/mysql" ]; then
     /usr/bin/mysqladmin password $MYSQL_ROOT_PASSWORD
 
     /usr/bin/mysqladmin --defaults-file=/etc/mysql/debian.cnf shutdown
-
-    echo "root:$MYSQL_ROOT_PASSWORD"
 else
     echo "MySQL Database already exists. Doing nothing."
 fi
