@@ -11,13 +11,10 @@ RUN apt-get upgrade -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+RUN rm -Rf /var/lib/mysql
+
 RUN mkdir /var/run/mysqld
 RUN chown mysql:mysql /var/run/mysqld
-
-RUN sed \
-    -i.orig \
-    -e s/bind-address\\\t\\\t=\\\s127\.0\.0\.1/bind-address\\\t\\\t=\ 0\.0\.0\.0/g \
-    /etc/mysql/mysql.conf.d/mysqld.cnf
 
 COPY supervisord/mysql.conf /etc/supervisor/conf.d/mysql.conf
 
@@ -25,7 +22,10 @@ COPY entrypoint.sh /usr/local/bin/
 RUN chmod 750 /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
-VOLUME /var/lib/mysql
+RUN sed \
+    -i.orig \
+    -e s/bind-address/#\ bind-address/g \
+    /etc/mysql/mysql.conf.d/mysqld.cnf
 
 EXPOSE 3306
 

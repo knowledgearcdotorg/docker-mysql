@@ -1,14 +1,27 @@
 #!/bin/bash
 
 # Create a random string and use it as MySQL's root password.
-# The password is output to the screen and is saved to /root/config/mysql.
+# The password is output to the screen or is available via docker logs.
 
-PCONFIG=/root/config
-FMYSQL=$PCONFIG/mysql
+DATADIR="$(/usr/sbin/mysqld --verbose --help --log-bin-index=/tmp/tmp.index 2>/dev/null | awk '$1 == "datadir" { print $2; exit }')"
 
-if [ ! -f $FMYSQL ]; then
+echo $DATADIR
+
+if [ ! -d "$DATADIR/mysql" ]; then
+    echo "initializing mysql data store for the first time..."
+
     MYSQL_ROOT_PASSWORD="$(date +%s | sha256sum | base64 | head -c 32 ; echo)"
 
+    echo "creating $DATADIR..."
+    mkdir -p "$DATADIR"
+    chown -R mysql:mysql "$DATADIR"
+
+    echo "initializing..."
+    /usr/sbin/mysqld \
+        --initialize-insecure
+    echo "initialized"
+
+    echo "starting mysql..."
     /usr/bin/mysqld_safe \
         --user=mysql \
         --skip-networking \
@@ -25,17 +38,21 @@ if [ ! -f $FMYSQL ]; then
       echo -n "."
       sleep 1
     done
+    echo "mysql started"
+
+    DEBIAN_SYS_MAINT_PASSWORD="$(cat /etc/mysql/debian.cnf | awk '$1 == "password" { print $3; exit }')"
+
+    # add the user with the reload right
+    /usr/bin/mysql -u root -e "GRANT ALL PRIVILEGES on *.* TO 'debian-sys-maint'@'localhost' IDENTIFIED BY '$DEBIAN_SYS_MAINT_PASSWORD';"
+    /usr/bin/mysql -u root -e "FLUSH PRIVILEGES;"
 
     /usr/bin/mysqladmin password $MYSQL_ROOT_PASSWORD
 
     /usr/bin/mysqladmin --defaults-file=/etc/mysql/debian.cnf shutdown
 
-    mkdir $PCONFIG
-    touch $FMYSQL
-    echo "mysql_root_password=$MYSQL_ROOT_PASSWORD" >> $FMYSQL
-
-    echo "GENERATED ROOT PASSWORD: $MYSQL_ROOT_PASSWORD"
+    echo "root:$MYSQL_ROOT_PASSWORD"
+else
+    echo "MySQL Database already exists. Doing nothing."
 fi
 
 exec "$@"
-
