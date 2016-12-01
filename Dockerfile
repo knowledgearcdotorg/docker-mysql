@@ -1,4 +1,4 @@
-FROM knowledgearcdotorg/supervisor
+FROM knowledgearcdotorg/base
 MAINTAINER development@knowledgearc.com
 
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
