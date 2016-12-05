@@ -5,8 +5,6 @@
 
 DATADIR="$(/usr/sbin/mysqld --verbose --help --log-bin-index=/tmp/tmp.index 2>/dev/null | awk '$1 == "datadir" { print $2; exit }')"
 
-echo $DATADIR
-
 if [ ! -d "$DATADIR/mysql" ]; then
     echo "initializing mysql data store for the first time..."
 
